@@ -1,0 +1,31 @@
+# -*- mode: Python -*-',
+load('ext://helm_resource', 'helm_resource', 'helm_repo')
+
+# Create the ingress-nginx namespace if it doesn't exist
+local('kubectl get ns ingress-nginx || kubectl create ns ingress-nginx')
+
+# Add the ingress-nginx chart repository
+helm_repo(
+    'ingress-nginx',
+    'https://kubernetes.github.io/ingress-nginx',
+    resource_name='ingress-nginx-chart',
+    labels=['ingress']
+)
+
+
+# Install the ingress-nginx chart
+helm_resource(
+    'ingress-nginx',
+    'ingress-nginx/ingress-nginx',
+    namespace='ingress-nginx',
+    resource_deps=['ingress-nginx-chart', 'linkerd-control-plane'],
+    release_name='ingress-nginx',
+    port_forwards='5050:80',
+    labels=['ingress'],
+    flags=[
+        '--version', '4.7.1',
+        '--set', 'controller.allowSnippetAnnotations=true',
+        '--set', 'controller.ingressClassResource.name=nginx',
+        '--set', "controller.podAnnotations.'linkerd\\.io/inject'=enabled"
+    ]
+)

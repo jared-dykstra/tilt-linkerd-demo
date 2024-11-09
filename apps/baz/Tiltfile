@@ -1,0 +1,13 @@
+k8s_yaml("manifests.yaml")
+
+docker_build(
+    'baz',
+    context='.',
+    dockerfile='Dockerfile',
+)
+
+k8s_resource(
+    'baz',
+    labels=['app'],
+    resource_deps=['linkerd-control-plane']
+)

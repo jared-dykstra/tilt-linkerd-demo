@@ -1,0 +1,18 @@
+k8s_yaml("manifests.yaml")
+
+docker_build(
+    'foo',
+    context='.',
+    dockerfile='Dockerfile',
+)
+
+k8s_resource(
+    'foo',
+    labels=['app'],
+    objects=['foo:ingress'],
+    port_forwards=['8000:80'],
+    links=[
+        link('http://foo.localhost:5050', 'foo.localhost'),
+    ],
+    resource_deps=['linkerd-control-plane', 'ingress-nginx']
+)
