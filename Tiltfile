@@ -19,11 +19,11 @@ docker_registry = os.environ.get('TILT_DOCKER_REGISTRY', None)
 if docker_registry:
   default_registry(docker_registry)
 
-# Load resources
-include('resources/ingress-nginx/Tiltfile')
-include('resources/linkerd/Tiltfile')
+# Load infra resources
+include('infra/ingress-nginx/Tiltfile')
+include('infra/linkerd/Tiltfile')
 
-# Load apps
+# Load app resources
 include('apps/foo/Tiltfile')
 include('apps/bar/Tiltfile')
 include('apps/baz/Tiltfile')
