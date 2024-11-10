@@ -16,3 +16,27 @@ datasources:
         url: http://prometheus.linkerd-viz.svc.cluster.local:9090
         access: proxy
         isDefault: true
+
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: "default"
+        orgId: 1
+        folder: ""
+        type: file
+        disableDeletion: true
+        editable: false
+        options:
+          path: /var/lib/grafana/dashboards/default
+
+dashboards:
+  default:
+    linkerd-routes:
+      gnetId: 11868
+      revision: 1
+      datasource: Prometheus
+    linkerd-authority:
+      gnetId: 14261
+      revision: 1
+      datasource: Prometheus
