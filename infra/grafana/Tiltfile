@@ -1,0 +1,29 @@
+load('ext://helm_resource', 'helm_resource', 'helm_repo')
+
+local('kubectl get ns grafana || kubectl create ns grafana')
+local('kubectl annotate ns grafana linkerd.io/inject=enabled')
+
+helm_repo(
+    'grafana',
+    'https://grafana.github.io/helm-charts',
+    resource_name='grafana-chart',
+    labels=['grafana']
+)
+
+helm_resource(
+    'grafana',
+    'grafana/grafana',
+    namespace='grafana',
+    resource_deps=['grafana-chart'],
+    release_name='grafana',
+    labels=['grafana'],
+    flags=['--values', 'values.yaml'],
+    deps=['values.yaml']
+)
+
+k8s_resource(
+    'grafana',
+    links=[
+        link('http://grafana.localhost:5050', 'grafana.localhost')
+    ]
+)

@@ -22,6 +22,7 @@ if docker_registry:
 # Load infra resources
 include('infra/ingress-nginx/Tiltfile')
 include('infra/linkerd/Tiltfile')
+include('infra/grafana/Tiltfile')
 
 # Load app resources
 include('apps/foo/Tiltfile')

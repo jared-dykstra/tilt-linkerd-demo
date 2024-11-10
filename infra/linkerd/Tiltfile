@@ -1,15 +1,9 @@
-# -*- mode: Python -*-',
-
-load('ext://uibutton', 'cmd_button', 'location')
-load('ext://local_output', 'local_output')
 load('ext://helm_resource', 'helm_resource', 'helm_repo')
-load('ext://k8s_attach', 'k8s_attach')
 
 local('kubectl get ns linkerd || kubectl create ns linkerd')
 local('kubectl get ns linkerd-viz || kubectl create ns linkerd-viz')
 local('kubectl annotate ns default linkerd.io/inject=enabled')
 
-# https://github.com/tilt-dev/tilt-extensions/blob/c0ec9fb70ca308f2d3e9d28a28cb6de6cb46d3d9/helm_resource/Tiltfile#L141
 helm_repo(
     'linkerd-edge',
     'https://helm.linkerd.io/edge',
@@ -50,10 +44,21 @@ helm_resource(
     release_name='linkerd-viz',
     port_forwards=['8084:8084', '9994:9994'],
     labels=['linkerd'],
-    flags=[],
+    flags=[
+        '--set', 'grafana.url=grafana.grafana:3000',
+    ],
     links=[
         link('http://linkerd.localhost:5050', 'linkerd.localhost'),
     ]
 )
 
-k8s_yaml('ingress.yaml')
+# Add an ingress resource for linkerd-viz web
+k8s_yaml('manifests.yaml')
+k8s_resource(
+    new_name='linkerd-viz-ext',
+    objects=[
+        'linkerd-viz:ingress',
+        'prometheus-grafana-admin:AuthorizationPolicy'
+    ],
+    labels=['linkerd']
+)
