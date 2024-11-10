@@ -9,7 +9,13 @@ docker_build(
 k8s_resource(
     'foo',
     labels=['app'],
-    objects=['foo:ingress'],
+    objects=[
+        'foo:ingress',
+        'foo:serviceaccount',
+        'foo-root-route:httproute',
+        'foo:server',
+        'foo-from-nginx:serverauthorization',
+    ],
     port_forwards=['8000:80'],
     links=[
         link('http://foo.localhost:5050', 'foo.localhost'),

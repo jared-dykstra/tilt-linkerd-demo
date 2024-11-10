@@ -17,36 +17,51 @@ func main() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	barChan, bazChan := make(chan string), make(chan string)
+	barChan, bazChan := make(chan Response), make(chan Response)
 	go func() {
 		barChan <- getBar()
 	}()
 	go func() {
 		bazChan <- getBaz()
 	}()
-	fmt.Fprintf(w, "Hello, World!\n")
-	fmt.Fprintf(w, "bar=%s\n", <-barChan)
-	fmt.Fprintf(w, "baz=%s\n", <-bazChan)
+
+	barResponse, bazResponse := <-barChan, <-bazChan
+
+	if barResponse.Status != http.StatusOK || bazResponse.Status != http.StatusOK {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	fmt.Fprintf(w, "%s\n%s", barResponse, bazResponse)
 }
 
-func getResource(url string) string {
+func getResource(url string) Response {
 	resp, err := http.Get(url)
 	if err != nil {
-		return ""
+		return Response{
+			URL:   url,
+			Error: err,
+		}
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return ""
+		return Response{
+			URL:   url,
+			Error: err,
+		}
 	}
-	return string(body)
+	return Response{
+		Status: resp.StatusCode,
+		URL:    url,
+		Body:   string(body),
+	}
 }
 
-func getBar() string {
+func getBar() Response {
 	return getResource(barURL)
 }
 
-func getBaz() string {
+func getBaz() Response {
 	return getResource(bazURL)
 }
 
@@ -55,4 +70,21 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+type Response struct {
+	Status int
+	URL    string
+	Body   string
+	Error  error
+}
+
+func (r Response) String() string {
+	return fmt.Sprintf(`
+---
+   url: %s
+status: %d
+  body: %s
+ error: %v
+	`, r.URL, r.Status, r.Body, r.Error)
 }

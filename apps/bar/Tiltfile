@@ -8,6 +8,12 @@ docker_build(
 
 k8s_resource(
     'bar',
+    objects=[
+        'bar:serviceaccount',
+        'bar-root-route:httproute',
+        'bar:server',
+        'bar-from-foo:serverauthorization',
+    ],
     labels=['app'],
     resource_deps=['linkerd-control-plane']
 )

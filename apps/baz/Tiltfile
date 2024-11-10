@@ -9,5 +9,11 @@ docker_build(
 k8s_resource(
     'baz',
     labels=['app'],
-    resource_deps=['linkerd-control-plane']
+    objects=[
+        'baz:serviceaccount',
+        'baz-root-route:httproute',
+        'baz:server',
+        'baz-from-foo:serverauthorization',
+    ],
+    resource_deps=['linkerd-control-plane'],
 )
