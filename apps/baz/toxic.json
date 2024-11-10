@@ -1,0 +1,25 @@
+[
+  {
+    "name": "baz_server_8080",
+    "listen": ":8000",
+    "upstream": "http://localhost:8080",
+    "toxics": [
+      {
+        "kind": "delay",
+        "probability": 0.5,
+        "spec": {
+          "delay": "100ms",
+          "jitter": "10ms"
+        }
+      },
+      {
+        "kind": "status",
+        "probability": 0.25,
+        "spec": {
+          "status": 500,
+          "message": "Internal Server Error"
+        }
+      }
+    ]
+  }
+]

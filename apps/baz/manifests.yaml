@@ -16,7 +16,7 @@ spec:
     app: baz
   ports:
     - port: 80
-      targetPort: 8080
+      targetPort: http-toxic
       name: http
       protocol: TCP
 ---
@@ -37,11 +37,24 @@ spec:
     spec:
       serviceAccountName: baz
       containers:
+        - name: toxic
+          image: toxic:latest
+          ports:
+            - containerPort: 8000
+              name: http-toxic
+          volumeMounts:
+            - name: baz-toxic-config
+              mountPath: /config/toxic.json
+              subPath: toxic.json
         - name: baz
           image: baz:latest
           ports:
             - containerPort: 8080
               name: http
+      volumes:
+        - name: baz-toxic-config
+          configMap:
+            name: baz-toxic-config
 ---
 apiVersion: policy.linkerd.io/v1beta2
 kind: HTTPRoute
