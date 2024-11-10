@@ -1,0 +1,16 @@
+k8s_yaml("manifests.yaml")
+
+docker_build(
+    'synthetic',
+    context='.',
+    dockerfile='Dockerfile',
+)
+
+k8s_resource(
+    'synthetic',
+    objects=[
+        'synthetic:serviceaccount',
+    ],
+    labels=['client'],
+    resource_deps=['ingress-nginx', 'foo']
+)

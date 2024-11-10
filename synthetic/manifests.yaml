@@ -1,0 +1,26 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: synthetic
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: synthetic
+  labels:
+    app: synthetic
+spec:
+  selector:
+    matchLabels:
+      app: synthetic
+  template:
+    metadata:
+      labels:
+        app: synthetic
+    spec:
+      serviceAccountName: synthetic
+      containers:
+        - name: synthetic
+          image: synthetic:latest

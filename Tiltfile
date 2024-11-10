@@ -28,3 +28,6 @@ include('infra/grafana/Tiltfile')
 include('apps/foo/Tiltfile')
 include('apps/bar/Tiltfile')
 include('apps/baz/Tiltfile')
+
+# Load synthetic resources
+include('synthetic/Tiltfile')
