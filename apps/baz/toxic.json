@@ -5,19 +5,19 @@
     "upstream": "http://localhost:8080",
     "toxics": [
       {
+        "kind": "offline",
+        "probability": 1.0,
+        "spec": {
+          "probability": 0.0005,
+          "duration": "15s"
+        }
+      },
+      {
         "kind": "delay",
         "probability": 0.5,
         "spec": {
           "delay": "100ms",
           "jitter": "10ms"
-        }
-      },
-      {
-        "kind": "status",
-        "probability": 0.25,
-        "spec": {
-          "status": 500,
-          "message": "Internal Server Error"
         }
       }
     ]

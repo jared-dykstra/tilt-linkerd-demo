@@ -9,6 +9,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: baz
+  annotations:
+    balancer.linkerd.io/failure-accrual: consecutive
   labels:
     app: baz
 spec:
@@ -27,6 +29,7 @@ metadata:
   labels:
     app: baz
 spec:
+  replicas: 3
   selector:
     matchLabels:
       app: baz

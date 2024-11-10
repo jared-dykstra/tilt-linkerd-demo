@@ -38,6 +38,13 @@ type ToxicDelay struct {
 	JitterMs string `mapstructure:"jitter"`
 }
 
+type ToxicOffline struct {
+	// Probability is the likelihood an offline status will trigger
+	Probability float64 `mapstructure:"probability"`
+	// Duration is how long the offline period will last
+	Duration string `mapstructure:"duration"`
+}
+
 func log(message string, args ...any) {
 	output := message
 	for i := 0; i < len(args); i += 2 {
@@ -87,22 +94,32 @@ func serverHandler(server Server) http.Handler {
 		panic(fmt.Sprintf("failed to parse upstream url: %v", err))
 	}
 	proxy := httputil.NewSingleHostReverseProxy(upstream)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log("handling request", "name", server.Name)
-		var handler http.Handler = proxy
-		for i := len(server.Toxics) - 1; i >= 0; i-- {
-			if rand.Float64() > server.Toxics[i].Probability {
-				continue
-			}
-			toxic := server.Toxics[i]
-			switch toxic.Kind {
-			case "delay":
-				handler = delayHandler(handler, delaySpecFromAny(toxic.Spec))
-			case "status":
-				handler = statusHandler(handler, statusSpecFromAny(toxic.Spec))
-			}
+
+	var handler http.Handler = proxy
+
+	// Iterate through toxics in reverse order
+	for i := len(server.Toxics) - 1; i >= 0; i-- {
+		toxic := server.Toxics[i]
+		switch toxic.Kind {
+		case "delay":
+			handler = baseHandler(delayHandler(handler, delaySpecFromAny(toxic.Spec)), toxic.Probability)
+		case "status":
+			handler = baseHandler(statusHandler(handler, statusSpecFromAny(toxic.Spec)), toxic.Probability)
+		case "offline":
+			handler = baseHandler(offlineHandler(handler, offlineSpecFromAny(toxic.Spec)), toxic.Probability)
 		}
-		handler.ServeHTTP(w, r)
+	}
+
+	return handler
+}
+
+func baseHandler(next http.Handler, probability float64) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if rand.Float64() > probability {
+			next.ServeHTTP(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -124,7 +141,6 @@ func delayHandler(next http.Handler, spec ToxicDelay) http.Handler {
 		panic(fmt.Sprintf("failed to parse jitter: %v", err))
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log("delaying request", "delay", spec.Delay, "jitter", spec.JitterMs)
 		time.Sleep(delay + time.Duration(rand.Intn(int(jitter))))
 		next.ServeHTTP(w, r)
 	})
@@ -138,10 +154,49 @@ func statusSpecFromAny(spec any) ToxicStatus {
 	return result
 }
 
-func statusHandler(next http.Handler, spec ToxicStatus) http.Handler {
+func statusHandler(_ http.Handler, spec ToxicStatus) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log("returning status", "status", spec.Status, "message", spec.Message)
 		w.WriteHeader(spec.Status)
 		w.Write([]byte(spec.Message))
+	})
+}
+
+func offlineSpecFromAny(spec any) ToxicOffline {
+	var result ToxicOffline
+	if err := mapstructure.Decode(spec, &result); err != nil {
+		panic(fmt.Sprintf("failed to decode offline spec: %v", err))
+	}
+	return result
+}
+
+// offlineHandler will return 503s during an offline window
+func offlineHandler(next http.Handler, spec ToxicOffline) http.Handler {
+	var (
+		mu        sync.Mutex
+		windowEnd time.Time = time.Now()
+	)
+	duration, err := time.ParseDuration(spec.Duration)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse duration: %v", err))
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Start an offline window if we hit the probability
+		if time.Now().After(windowEnd) && rand.Float64() < spec.Probability {
+			mu.Lock()
+			windowEnd = time.Now().Add(duration)
+			mu.Unlock()
+			log("going offline", "end", windowEnd)
+		}
+
+		// Return a 503 if we're offline
+		if !time.Now().After(windowEnd) {
+			log("offline, returning 503", "end", windowEnd)
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte("Service Unavailable"))
+			return
+		}
+
+		// Otherwise, serve the request
+		next.ServeHTTP(w, r)
 	})
 }
