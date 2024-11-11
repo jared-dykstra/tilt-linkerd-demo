@@ -14,7 +14,7 @@ helm_resource(
     'grafana',
     'grafana/grafana',
     namespace='grafana',
-    resource_deps=['grafana-chart'],
+    resource_deps=['grafana-chart', 'linkerd-control-plane'],
     release_name='grafana',
     labels=['grafana'],
     flags=['--values', 'values.yaml'],

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"sort"
 )
 
@@ -11,17 +12,21 @@ func main() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	content := "Hello from baz! Here are the request details:\n\n"
-	content += fmt.Sprintf("Host: %s\n", r.Host)
-	content += fmt.Sprintf("Path: %s\n", r.URL.Path)
-	content += fmt.Sprintf("Method: %s\n", r.Method)
-	content += fmt.Sprintf("Protocol: %s\n", r.Proto)
-	content += fmt.Sprintf("RemoteAddr: %s\n", r.RemoteAddr)
-	content += fmt.Sprintf("RequestURI: %s\n", r.RequestURI)
+	content := fmt.Sprintf(`
+Pod details:
+  Hostname: %s
 
-	content += "Headers:\n"
+Request details:
+  Host: %s
+  Path: %s
+  Method: %s
+  Protocol: %s
+  RemoteAddr: %s
+  RequestURI: %s
+  Headers:
+`, os.Getenv("HOSTNAME"), r.Host, r.URL.Path, r.Method, r.Proto, r.RemoteAddr, r.RequestURI)
 	for _, k := range sortedHeaderKeys(r.Header) {
-		content += fmt.Sprintf("  %s: %s\n", k, r.Header.Get(k))
+		content += fmt.Sprintf("    %s: %s\n", k, r.Header.Get(k))
 	}
 
 	fmt.Fprintln(w, content)

@@ -5,19 +5,20 @@
     "upstream": "http://localhost:8080",
     "toxics": [
       {
-        "kind": "offline",
+        "kind": "delay",
         "probability": 1.0,
         "spec": {
-          "probability": 0.0005,
-          "duration": "15s"
+          "delay": "10ms",
+          "jitter": "5ms"
         }
       },
       {
-        "kind": "delay",
-        "probability": 0.5,
+        "kind": "offline",
+        "probability": 1.0,
         "spec": {
-          "delay": "100ms",
-          "jitter": "10ms"
+          "interval": "2m",
+          "duration": "10s",
+          "start_jitter": "60s"
         }
       }
     ]

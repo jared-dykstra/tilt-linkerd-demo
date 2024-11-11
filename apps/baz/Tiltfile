@@ -26,6 +26,10 @@ k8s_resource(
         'baz:server',
         'baz-from-foo:serverauthorization',
         'baz-toxic-config:configmap:default',
+        'baz:ingress',
+    ],
+    links=[
+        link('http://baz.localhost:5050', 'baz.localhost'),
     ],
     port_forwards=[
         '9000:8000',

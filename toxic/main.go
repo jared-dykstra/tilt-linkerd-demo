@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -34,27 +35,21 @@ type ToxicStatus struct {
 }
 
 type ToxicDelay struct {
-	Delay    string `mapstructure:"delay"`
-	JitterMs string `mapstructure:"jitter"`
+	Delay  string `mapstructure:"delay"`
+	Jitter string `mapstructure:"jitter"`
 }
 
 type ToxicOffline struct {
-	// Probability is the likelihood an offline status will trigger
-	Probability float64 `mapstructure:"probability"`
+	// Interval is how often the offline period will trigger
+	Interval string `mapstructure:"interval"`
 	// Duration is how long the offline period will last
 	Duration string `mapstructure:"duration"`
-}
-
-func log(message string, args ...any) {
-	output := message
-	for i := 0; i < len(args); i += 2 {
-		output = fmt.Sprintf("%s %s=\"%v\"", output, args[i], args[i+1])
-	}
-	fmt.Println(output)
+	// StartJitter is the amount of time to wait before starting the offline period
+	StartJitter string `mapstructure:"start_jitter"`
 }
 
 func main() {
-	log("starting toxic")
+	log.Info("starting toxic")
 
 	var configPath string
 	flag.StringVar(&configPath, "config", "/config/toxic.json", "path to the config file")
@@ -80,7 +75,7 @@ func main() {
 		go func(server Server) {
 			defer wg.Done()
 			if err := http.ListenAndServe(server.Listen, serverHandler(server)); err != nil {
-				log("failed to start server", "name", server.Name, "error", err)
+				log.Info("failed to start server", "name", server.Name, "error", err)
 			}
 		}(server)
 	}
@@ -88,7 +83,7 @@ func main() {
 }
 
 func serverHandler(server Server) http.Handler {
-	log("creating server", "name", server.Name, "listen", server.Listen, "upstream", server.Upstream)
+	log.Info("creating server", "name", server.Name, "listen", server.Listen, "upstream", server.Upstream)
 	upstream, err := url.Parse(server.Upstream)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse upstream url: %v", err))
@@ -136,7 +131,7 @@ func delayHandler(next http.Handler, spec ToxicDelay) http.Handler {
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse delay: %v", err))
 	}
-	jitter, err := time.ParseDuration(spec.JitterMs)
+	jitter, err := time.ParseDuration(spec.Jitter)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse jitter: %v", err))
 	}
@@ -172,31 +167,42 @@ func offlineSpecFromAny(spec any) ToxicOffline {
 // offlineHandler will return 503s during an offline window
 func offlineHandler(next http.Handler, spec ToxicOffline) http.Handler {
 	var (
-		mu        sync.Mutex
-		windowEnd time.Time = time.Now()
+		offline bool
 	)
 	duration, err := time.ParseDuration(spec.Duration)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse duration: %v", err))
 	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Start an offline window if we hit the probability
-		if time.Now().After(windowEnd) && rand.Float64() < spec.Probability {
-			mu.Lock()
-			windowEnd = time.Now().Add(duration)
-			mu.Unlock()
-			log("going offline", "end", windowEnd)
-		}
+	startJitter, err := time.ParseDuration(spec.StartJitter)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse start jitter: %v", err))
+	}
+	interval, err := time.ParseDuration(spec.Interval)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse interval: %v", err))
+	}
 
+	randomStartDelay := time.Duration(rand.Intn(int(startJitter)))
+
+	log.Info("starting offline handler", "duration", duration, "interval", interval, "delay", randomStartDelay)
+	go func() {
+		time.Sleep(randomStartDelay)
+		for range time.Tick(interval) {
+			offline = true
+			log.Info("going offline", "duration", duration, "hostname", os.Getenv("HOSTNAME"))
+			time.Sleep(duration)
+			offline = false
+			log.Info("back online", "hostname", os.Getenv("HOSTNAME"))
+		}
+	}()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Return a 503 if we're offline
-		if !time.Now().After(windowEnd) {
-			log("offline, returning 503", "end", windowEnd)
+		if offline {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte("Service Unavailable"))
 			return
 		}
 
-		// Otherwise, serve the request
 		next.ServeHTTP(w, r)
 	})
 }

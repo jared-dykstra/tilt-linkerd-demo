@@ -11,6 +11,8 @@ metadata:
   name: baz
   annotations:
     balancer.linkerd.io/failure-accrual: consecutive
+    balancer.linkerd.io/failure-accrual-consecutive-min-penalty: 5s
+    balancer.linkerd.io/failure-accrual-consecutive-max-penalty: 10s
   labels:
     app: baz
 spec:
@@ -59,6 +61,27 @@ spec:
           configMap:
             name: baz-toxic-config
 ---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: baz
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/upstream-vhost: "baz"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: baz.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: baz
+                port:
+                  number: 80
+---
 apiVersion: policy.linkerd.io/v1beta2
 kind: HTTPRoute
 metadata:
@@ -66,7 +89,7 @@ metadata:
   namespace: default
   annotations:
     retry.linkerd.io/http: "5xx"
-    retry.linkerd.io/limit: "3"
+    retry.linkerd.io/limit: "2"
     retry.linkerd.io/timeout: 1s
 spec:
   parentRefs:
@@ -104,3 +127,4 @@ spec:
     meshTLS:
       identities:
         - "foo.default.serviceaccount.identity.linkerd.cluster.local"
+        - "ingress-nginx.ingress-nginx.identity.linkerd.cluster.local"

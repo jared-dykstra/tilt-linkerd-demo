@@ -60,5 +60,6 @@ k8s_resource(
         'linkerd-viz:ingress',
         'prometheus-grafana-admin:AuthorizationPolicy'
     ],
+    resource_deps=['linkerd-viz', 'ingress-nginx'],
     labels=['linkerd']
 )
