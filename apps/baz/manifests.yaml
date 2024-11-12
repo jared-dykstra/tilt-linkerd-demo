@@ -94,14 +94,33 @@ metadata:
 spec:
   parentRefs:
     - name: baz
-      kind: Service
-      group: core
-      port: 80
+      kind: Server
+      group: policy.linkerd.io
   rules:
     - matches:
         - path:
             type: PathPrefix
             value: "/"
+---
+apiVersion: policy.linkerd.io/v1beta2
+kind: HTTPRoute
+metadata:
+  name: baz-foo-bar-route
+  namespace: default
+  annotations:
+    retry.linkerd.io/http: "5xx"
+    retry.linkerd.io/limit: "2"
+    retry.linkerd.io/timeout: 1s
+spec:
+  parentRefs:
+    - name: baz
+      kind: Server
+      group: policy.linkerd.io
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: "/foo/bar"
 ---
 apiVersion: policy.linkerd.io/v1beta1
 kind: Server
@@ -112,8 +131,9 @@ spec:
   podSelector:
     matchLabels:
       app: baz
-  port: http
+  port: http-toxic
   proxyProtocol: HTTP/2
+  accessPolicy: deny # deny all traffic by default
 ---
 apiVersion: policy.linkerd.io/v1beta1
 kind: ServerAuthorization
@@ -128,3 +148,27 @@ spec:
       identities:
         - "foo.default.serviceaccount.identity.linkerd.cluster.local"
         - "ingress-nginx.ingress-nginx.identity.linkerd.cluster.local"
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: baz-foo-bar-policy
+  namespace: default
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: HTTPRoute
+    name: baz-foo-bar-route
+  requiredAuthenticationRefs:
+    - name: baz-bar-authn
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: baz-bar-authn
+  namespace: default
+spec:
+  identities:
+    - "bar.default.serviceaccount.identity.linkerd.cluster.local"

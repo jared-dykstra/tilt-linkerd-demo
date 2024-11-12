@@ -9,7 +9,7 @@ import (
 
 var (
 	barURL = getEnv("BAR_URL", "http://bar")
-	bazURL = getEnv("BAZ_URL", "http://baz")
+	bazURL = getEnv("BAZ_URL", "http://baz/foo/bar")
 )
 
 func main() {

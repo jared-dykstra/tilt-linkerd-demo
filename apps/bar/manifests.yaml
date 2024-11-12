@@ -72,6 +72,7 @@ spec:
       app: bar
   port: http
   proxyProtocol: HTTP/2
+  accessPolicy: deny # deny all traffic by default
 ---
 apiVersion: policy.linkerd.io/v1beta1
 kind: ServerAuthorization
