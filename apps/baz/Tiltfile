@@ -1,7 +1,12 @@
 # Load the 'configmap' extension
 load('ext://configmap', 'configmap_create')
 
-k8s_yaml("manifests.yaml")
+def files(glob_pattern):
+    return str(local('ls {}'.format(glob_pattern))).strip().split("\n")
+
+yaml_files = files('manifests/*.yaml')
+print(yaml_files)
+k8s_yaml(yaml_files)
 
 docker_build(
     'toxic',
@@ -24,9 +29,13 @@ k8s_resource(
         'baz:serviceaccount',
         'baz-root-route:httproute',
         'baz:server',
-        'baz-from-foo:serverauthorization',
+        'baz:serverauthorization',
         'baz-toxic-config:configmap:default',
         'baz:ingress',
+        "baz-bar-authn:meshtlsauthentication",
+        "baz-root-inbound-route:httproute",
+        "baz-foo-bar-inbound-route:httproute",
+        "baz-foo-bar-policy:authorizationpolicy"
     ],
     links=[
         link('http://baz.localhost:5050', 'baz.localhost'),

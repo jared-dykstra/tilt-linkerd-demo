@@ -1,0 +1,16 @@
+# Server Authorization
+# https://linkerd.io/2-edge/reference/authorization-policy/#serverauthorization
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  namespace: default
+  name: baz
+spec:
+  server:
+    name: baz
+  client:
+    meshTLS:
+      identities:
+        - "foo.default.serviceaccount.identity.linkerd.cluster.local"
+        - "ingress-nginx.ingress-nginx.identity.linkerd.cluster.local"

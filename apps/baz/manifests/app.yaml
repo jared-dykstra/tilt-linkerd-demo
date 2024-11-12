@@ -1,0 +1,64 @@
+# APP resources: service account, service, and deployment
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: baz
+  namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: baz
+  # # Circuit breaker https://linkerd.io/2.16/tasks/circuit-breakers/#tuning-circuit-breaking
+  # annotations:
+  #   balancer.linkerd.io/failure-accrual: consecutive
+  #   balancer.linkerd.io/failure-accrual-consecutive-min-penalty: 5s
+  #   balancer.linkerd.io/failure-accrual-consecutive-max-penalty: 10s
+  labels:
+    app: baz
+spec:
+  selector:
+    app: baz
+  ports:
+    - port: 80
+      targetPort: http-toxic
+      name: http
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: baz
+  labels:
+    app: baz
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: baz
+  template:
+    metadata:
+      labels:
+        app: baz
+    spec:
+      serviceAccountName: baz
+      containers:
+        - name: toxic
+          image: toxic:latest
+          ports:
+            - containerPort: 8000
+              name: http-toxic
+          volumeMounts:
+            - name: baz-toxic-config
+              mountPath: /config/toxic.json
+              subPath: toxic.json
+        - name: baz
+          image: baz:latest
+          ports:
+            - containerPort: 8080
+              name: http
+      volumes:
+        - name: baz-toxic-config
+          configMap:
+            name: baz-toxic-config

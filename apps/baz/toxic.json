@@ -13,12 +13,11 @@
         }
       },
       {
-        "kind": "offline",
-        "probability": 1.0,
+        "kind": "status",
+        "probability": 0.1,
         "spec": {
-          "interval": "2m",
-          "duration": "10s",
-          "start_jitter": "60s"
+          "status": 500,
+          "message": "Internal Server Error"
         }
       }
     ]

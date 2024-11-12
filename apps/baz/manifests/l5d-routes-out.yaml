@@ -1,0 +1,23 @@
+# HTTP Outbound routes
+# https://linkerd.io/2-edge/features/httproute/#inbound-and-outbound-httproutes
+---
+apiVersion: policy.linkerd.io/v1beta2
+kind: HTTPRoute
+metadata:
+  name: baz-root-route
+  namespace: default
+  annotations:
+    retry.linkerd.io/http: "5xx"
+    retry.linkerd.io/limit: "2"
+    retry.linkerd.io/timeout: 1s
+spec:
+  parentRefs:
+    - name: baz
+      kind: Service
+      group: core
+      port: 80
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: "/"

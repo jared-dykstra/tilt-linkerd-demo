@@ -1,0 +1,23 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: baz
+  namespace: default
+  annotations:
+    # Defer to linkerd for routing
+    # https://linkerd.io/2-edge/tasks/using-ingress/#nginx-community-version
+    nginx.ingress.kubernetes.io/service-upstream: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: baz.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: baz
+                port:
+                  number: 80
