@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: baz
+  name: foo
   namespace: default
   annotations:
     # Defer to linkerd for routing
@@ -11,13 +11,13 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: baz.localhost
+    - host: foo.localhost
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: baz
+                name: foo
                 port:
                   number: 80

@@ -1,0 +1,3 @@
+# files returns a list of files matching the glob pattern
+def files(glob_pattern):
+    return str(local('ls {}'.format(glob_pattern))).strip().split("\n")

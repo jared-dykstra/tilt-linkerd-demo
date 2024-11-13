@@ -5,10 +5,10 @@ apiVersion: policy.linkerd.io/v1beta1
 kind: ServerAuthorization
 metadata:
   namespace: default
-  name: baz
+  name: bar
 spec:
   server:
-    name: baz
+    name: bar
   client:
     meshTLS:
       identities:

@@ -5,11 +5,11 @@ apiVersion: policy.linkerd.io/v1beta1
 kind: ServerAuthorization
 metadata:
   namespace: default
-  name: baz
+  name: foo
 spec:
   server:
-    name: baz
+    name: foo
   client:
     meshTLS:
       identities:
-        - "foo.default.serviceaccount.identity.linkerd.cluster.local"
+        - "ingress-nginx.ingress-nginx.serviceaccount.identity.linkerd.cluster.local"
