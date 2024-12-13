@@ -2,6 +2,8 @@
 
 A demo of using Tilt to run an application with Linkerd on your local machine
 
+https://linkerd.io/2024/12/02/tilt-linkerd-nginx-part-1/?utm_campaign=3645814-Ambassadors&utm_content=318257191&utm_medium=social&utm_source=linkedin&hss_channel=lcp-99659303
+
 ## Quick Setup
 
 1. Setup local Kubernetes cluster
